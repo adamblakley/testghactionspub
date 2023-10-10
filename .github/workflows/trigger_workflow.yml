@@ -29,5 +29,5 @@ jobs:
           curl -X POST https://api.github.com/repos/adamblakley/testghactions/dispatches \
           -H 'Accept: application/vnd.github.everest-preview+json' \
           -u ${{ secrets.ACTIONS_KEY }} \
-          --data '{"event_type": "Trigger Automated Cloud PR Workflow", "client_payload": { "plugin_details": [{"name":"test","vendor":"test","version":"1.0.0-1696865303"}] }}'
+          --data '{"event_type": "Trigger Automated Cloud PR Workflow", "client_payload": { "PLUGIN_DETAILS": [{"name":"test","vendor":"test","version":"1.0.0-1696865303"}], "ENVIRONMENT": "STAGING", "AUTOMERGE": false }}'
       - uses: actions/checkout@v3
