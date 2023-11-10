@@ -41,7 +41,7 @@ jobs:
       - name: Extract the Git tag
         run: |
           echo "Found Filename: ${{ env.RELEASE_ASSET }}"
-          GIT_TAG="${{ env.RELEASE_ASSET%.tar.gz }}"
+          GIT_TAG="${{ env.RELEASE_ASSET }}%.tar.gz"
           echo "GIT_TAG=${GIT_TAG}" >> $GITHUB_ENV
 
       - name: Create release
