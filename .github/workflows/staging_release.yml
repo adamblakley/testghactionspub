@@ -69,7 +69,7 @@ jobs:
         id: findReleaseAsset
         run: |
           # Navigate to the build directory
-          cd {{ env.BUILD_OUTPUT_FULL_PATH }}
+          cd ${{ env.BUILD_OUTPUT_FULL_PATH }}
           # Use find to get the filename and set it as an environment variable
           filename=$(find . -type f -maxdepth 1 | xargs basename)
           echo "RELEASE_ASSET=${filename}" >> $GITHUB_ENV
