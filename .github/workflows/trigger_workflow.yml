@@ -1,33 +1,103 @@
-name: workflow_01
+name: Plugin Release Workflow
 on:
   workflow_dispatch:
-     inputs:
-      workflow_02:
-        description: 'ًWorkflow 2 which will be triggered'
+    inputs:
+      CLEAN:
+        description: 'Docker image cleanup.'
         required: true
-        default: 'workflow_02'
+        default: 'None'
+        type: choice
+        options:
+          - 'None'
+          - 'All'
+          - 'Dangling'
+      PLUGIN_NAME:
+        description: 'Plugin to release. The name must match the plugin directory name in GitHub. Multiple plugins can be entered, separated by commas (freegeoip,jira,etc).'
+        required: false
+      BRANCH:
+        description: 'Branch or tag to source the plugin code from.'
+        default: 'master'
+        required: false
+      SIMULATE:
+        description: 'Check to run this release job as a simulation (affects all infrastructure).'
+        required: true
+        default: false
+  pull_request:
+    types: [closed]
+    branches:
+      - master
 
-      workflow2_github_account:
-        description: 'GitHub Account Owner'
-        required: true
-        default: ':userName'
+env:
+  GITHUB_ORG: "rapid7"
+  INSIGHT_CONNECT_PLUGINS: "insightconnect-plugins"
+  INSIGHT_CONNECT_PLUGINS_REPO: "rapid7/insightconnect-plugins"
+  KOMAND_DOCKERHUB_USER: ${{secrets.KOMAND_DOCKERHUB_USER}}
+  KOMAND_DOCKERHUB_PASSWORD: ${{ secrets.KOMAND_DOCKERHUB_PASSWORD }}
+  PACKAGECLOUD_PYTHON_TOOLING_STABLE: ${{ secrets.PACKAGECLOUD_PYTHON_TOOLING_STABLE }}
+  PACKAGECLOUD_PYTHON_TOOLING_UNSTABLE: ${{ secrets.PACKAGECLOUD_PYTHON_TOOLING_UNSTABLE }}
 
-      workflow2_repo_github:
-        description: 'repo-name'
-        required: true
-        default: ':repoName' 
+permissions:
+  contents: write
+  actions: read
 
 jobs:
-  build:
+  release:
     runs-on: ubuntu-latest
 
     steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - name: Test
+      - name: Checkout Repository
+        id: checkoutRepository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 5
+          ref: "refs/heads/${{ env.INSIGHT_KOMAND_BRANCH }}"
+
+
+      - name: Read and Extract Plugin Details
+        id: extract-details
         run: |
-          export PLUGIN_DETAILS
-          curl -X POST https://api.github.com/repos/adamblakley/testghactions/dispatches \
-          -H 'Accept: application/vnd.github.everest-preview+json' \
-          -u ${{ secrets.ACTIONS_KEY }} \
-          --data '{"event_type": "automated_cloud_pr", "client_payload": { "PLUGIN_DETAILS": [{"name":"test","vendor":"test","version":"1.0.0-1696865303"}], "ENVIRONMENT": "STAGING", "AUTOMERGE": false }}'
-      - uses: actions/checkout@v3
+          # Read the contents of the plugin.properties file
+          contents=$(cat plugin.properties)
+
+          # Use a regular expression to extract the values
+          if [[ $contents =~ PLUGINS_DETAILS={"plugins_details":\[\{"name":"([^"]+)", "vendor":"([^"]+)", "version":"([^"]+)"\}\]} ]]; then
+            export BUILD_NAME="${BASH_REMATCH[1]}"
+            export BUILD_VENDOR="${BASH_REMATCH[2]}"
+            export BUILD_VERSION="${BASH_REMATCH[3]}"
+          else
+            echo "Error: Unable to extract plugin details from plugin.properties"
+            exit 1
+          fi
+
+      - name: Display Extracted Details
+        run: |
+          echo "BUILD_NAME: $BUILD_NAME"
+          echo "BUILD_VENDOR: $BUILD_VENDOR"
+          echo "BUILD_VERSION: $BUILD_VERSION"
+
+      - name: Create Git Tag
+        id: createGitTag
+        run: |
+          GIT_TAG="${BUILD_VENDOR}-${BUILD_NAME}-${BUILD_VERSION}"
+          echo "GIT_TAG=${GIT_TAG}" >> $GITHUB_ENV
+          echo "RELEASE_ASSET=${GIT_TAG}.tar.gz" >> $GITHUB_ENV
+        
+      - name: Create release
+        id: createRelease
+        uses: actions/create-release@v1
+        with:
+          tag_name: ${{ GIT_TAG }}
+          release_name: ${{ GIT_TAG }}
+          body: |
+            ${{ GIT_TAG }}
+          draft: false
+          prerelease: false
+
+      - name: Upload release asset
+        id: uploadReleaseAsset
+        uses: actions/upload-release-asset@v1
+        with:
+          upload_url: ${{ steps.createRelease.outputs.upload_url }}
+          asset_path: ./github/workflows/builds/${{ RELEASE_ASSET }}.tar.gz
+          asset_name: ${{ RELEASE_ASSET }}
+          asset_content_type: application/gzip
