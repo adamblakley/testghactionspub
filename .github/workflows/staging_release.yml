@@ -25,6 +25,7 @@ jobs:
       - name: Check if merged
         id: checkIfMerged
         run: |
+          echo "INSIGHT_KOMAND_BRANCH='main'" >> $GITHUB_ENV
           if [[ "${{ github.event.pull_request.merged }}" == "true" ]]; then
             echo "Pull request has been merged. Starting release process..."
             echo "ROOT_BUILD_CAUSE=SCMTRIGGER" >> $GITHUB_ENV
@@ -61,7 +62,6 @@ jobs:
         id: setUpEnvironmentVariables
         run: |
           # Setup environment variables from input
-          echo "INSIGHT_KOMAND_BRANCH='master'" >> $GITHUB_ENV
           echo "BUILD_OUTPUT_DIRECTORY='builds'" >> $GITHUB_ENV
           echo "BUILD_OUTPUT_FULL_PATH='.github/workflows/builds'" >> $GITHUB_ENV
 
