@@ -40,30 +40,19 @@ jobs:
           echo "RELEASE_ASSET=${filename}" >> $GITHUB_ENV
           echo "GIT_TAG=${filename%.tar.gz}" >> $GITHUB_ENV
           
-      - name: Get release ID
-        id: get-release-id
-        run: |
-          RELEASE_ID=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-            "https://api.github.com/repos/${{ github.repository }}/releases/tags/${{ env.GIT_TAG }}" \
-            | jq -r '.id')
-
-          echo "RELEASE_ID=${RELEASE_ID}" >> $GITHUB_ENV
-
-      - name: Update or Create Release
-        run: |
-          if [ -n "$RELEASE_ID" ]; then
-            # If release already exists, update it
-            curl -X PATCH -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-              -H "Accept: application/vnd.github.v3+json" \
-              "https://api.github.com/repos/${{ github.repository }}/releases/${RELEASE_ID}" \
-              -d '{"tag_name":"${{ env.GIT_TAG }}","name":"${{ env.GIT_TAG }}","body":"${{ env.GIT_TAG }}"}'
-          else
-            # If release does not exist, create it
-            curl -X POST -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-              -H "Accept: application/vnd.github.v3+json" \
-              "https://api.github.com/repos/${{ github.repository }}/releases" \
-              -d '{"tag_name":"${{ env.GIT_TAG }}","name":"${{ env.GIT_TAG }}","body":"${{ env.GIT_TAG }}"}'
-          fi
+      - name: Create release
+        id: createRelease
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag_name: ${{ env.GIT_TAG }}
+          release_name: ${{ env.GIT_TAG }}
+          body: |
+            ${{ env.GIT_TAG }}
+          draft: false
+          prerelease: false
 
       - name: Upload release asset
         id: uploadReleaseAsset
@@ -71,7 +60,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: "https://uploads.github.com/repos/${{ github.repository }}/releases/${{ env.GIT_TAG }}/assets?name=${{ env.RELEASE_ASSET }}"
+          upload_url: ${{ steps.createRelease.outputs.upload_url }}
           asset_path: .github/workflows/builds/${{ env.RELEASE_ASSET }}
           asset_name: ${{ env.RELEASE_ASSET }}
           asset_content_type: application/gzip
