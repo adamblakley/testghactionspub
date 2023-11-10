@@ -38,6 +38,12 @@ jobs:
           # Set the output variable for later use
           echo "RELEASE_ASSET=${filename}" >> $GITHUB_ENV
 
+      - name: Extract the Git tag
+        run: |
+          echo "Found Filename: ${{ env.RELEASE_ASSET }}"
+          GIT_TAG="${{ env.RELEASE_ASSET%.tar.gz }}"
+          echo "GIT_TAG=${GIT_TAG}" >> $GITHUB_ENV
+
       - name: Create release
         id: createRelease
         uses: actions/create-release@v1
