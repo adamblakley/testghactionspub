@@ -30,7 +30,7 @@ jobs:
         id: find-filename
         run: |
           # Navigate to the desired directory
-          cd ./github/workflows/builds
+          cd .github/workflows/builds
 
           # Use find to get the filename
           filename=$(find . -type f -maxdepth 1)
