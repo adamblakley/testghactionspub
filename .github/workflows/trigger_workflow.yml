@@ -38,7 +38,7 @@ jobs:
           
           # Set the output variable for later use
           echo "RELEASE_ASSET=${filename}" >> $GITHUB_ENV
-          echo "GIT_TAG=${filename%.tar.gz}"" >> $GITHUB_ENV
+          echo "GIT_TAG=${filename%.tar.gz}" >> $GITHUB_ENV
           
       - name: Create release
         id: createRelease
