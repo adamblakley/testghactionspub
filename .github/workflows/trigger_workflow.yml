@@ -49,7 +49,7 @@ jobs:
         id: createRelease
         uses: actions/create-release@v1
         env:
-          GITHUB_TOKEN: GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           tag_name: ${{ env.GIT_TAG }}
@@ -62,8 +62,9 @@ jobs:
       - name: Upload release asset
         id: uploadReleaseAsset
         uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
           upload_url: ${{ steps.createRelease.outputs.upload_url }}
           asset_path: .github/workflows/builds/${{ env.RELEASE_ASSET }}.tar.gz
           asset_name: ${{ env.RELEASE_ASSET }}
